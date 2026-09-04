@@ -4,7 +4,6 @@ Zero external dependencies, publication-ready vector charts.
 """
 
 import html
-from typing import List
 from .models import PlanAssessment
 from .metrics import compute_d_max, compute_d_mean, get_volume_at_dose
 

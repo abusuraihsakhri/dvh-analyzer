@@ -3,12 +3,33 @@ CLI for dvh-analyzer.
 """
 
 import argparse
+import os
 import sys
+from pathlib import Path
 from .models import PlanAssessment
 from .parser import parse_dvh_csv
 from .evaluator import evaluate_plan_constraints
 from .metrics import compute_homogeneity_index, compute_d_mean, compute_d_max, compute_geud, get_volume_at_dose
 from .renderer_svg import render_dvh_svg
+
+
+def _validate_input_path(filepath: str) -> Path:
+    """Validate input file path exists and is within allowed directory."""
+    path = Path(filepath).resolve()
+    if not path.exists():
+        raise FileNotFoundError(f"Input file not found: {filepath}")
+    if not path.is_file():
+        raise ValueError(f"Path is not a file: {filepath}")
+    return path
+
+
+def _validate_output_path(filepath: str) -> Path:
+    """Validate output file path parent directory exists."""
+    path = Path(filepath).resolve()
+    parent = path.parent
+    if not parent.exists():
+        raise FileNotFoundError(f"Output directory does not exist: {parent}")
+    return path
 
 
 def _generate_thoracic_sample_csv() -> str:
@@ -77,17 +98,24 @@ def main(argv=None):
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
+    # Validate rx is positive
+    def _positive_float(value):
+        fvalue = float(value)
+        if fvalue <= 0:
+            raise argparse.ArgumentTypeError(f"{value} is not a positive number")
+        return fvalue
+
     # Report
     rep_parser = subparsers.add_parser("report", help="Calculate dosimetric metrics and evaluate QUANTEC compliance")
     rep_parser.add_argument("-i", "--input", required=True, help="Path to DVH CSV file")
-    rep_parser.add_argument("--rx", type=float, default=60.0, help="Prescribed dose in Gy (default: 60.0)")
+    rep_parser.add_argument("--rx", type=_positive_float, default=60.0, help="Prescribed dose in Gy (default: 60.0)")
 
     # Plot
     plot_parser = subparsers.add_parser("plot", help="Render DVH Multi-Structure Overlay SVG")
     plot_parser.add_argument("-i", "--input", required=True, help="Path to DVH CSV file")
     plot_parser.add_argument("-o", "--output", default="dvh_plot.svg", help="Output SVG filepath")
     plot_parser.add_argument("-t", "--title", default="Dose-Volume Histogram", help="Plot title")
-    plot_parser.add_argument("--rx", type=float, default=60.0, help="Prescribed dose in Gy")
+    plot_parser.add_argument("--rx", type=_positive_float, default=60.0, help="Prescribed dose in Gy")
 
     # Sample CSV
     sample_parser = subparsers.add_parser("sample-csv", help="Generate sample Thoracic Radiotherapy DVH CSV")
@@ -95,10 +123,26 @@ def main(argv=None):
 
     args = parser.parse_args(argv)
 
+    try:
+        return _execute_command(args, parser)
+    except FileNotFoundError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"Unexpected error: {e}", file=sys.stderr)
+        return 2
+
+
+def _execute_command(args, parser):
+    """Execute the selected CLI command."""
     if args.command == "sample-csv":
         data = _generate_thoracic_sample_csv()
         if args.output:
-            with open(args.output, "w", encoding="utf-8") as f:
+            output_path = _validate_output_path(args.output)
+            with open(str(output_path), "w", encoding="utf-8") as f:
                 f.write(data)
             print(f"Sample DVH CSV written to: {args.output}")
         else:
@@ -106,15 +150,18 @@ def main(argv=None):
         return 0
 
     if args.command == "plot":
-        plan = parse_dvh_csv(args.input, prescribed_dose_gy=args.rx)
+        input_path = _validate_input_path(args.input)
+        output_path = _validate_output_path(args.output)
+        plan = parse_dvh_csv(str(input_path), prescribed_dose_gy=args.rx)
         svg_content = render_dvh_svg(plan, title=args.title)
-        with open(args.output, "w", encoding="utf-8") as f:
+        with open(str(output_path), "w", encoding="utf-8") as f:
             f.write(svg_content)
         print(f"DVH plot successfully rendered -> {args.output} ({len(plan.curves)} structures)")
         return 0
 
     if args.command == "report":
-        plan = parse_dvh_csv(args.input, prescribed_dose_gy=args.rx)
+        input_path = _validate_input_path(args.input)
+        plan = parse_dvh_csv(str(input_path), prescribed_dose_gy=args.rx)
         print("=" * 80)
         print(f"  RADIOTHERAPY PLAN DOSIMETRY & QUANTEC AUDIT: {plan.plan_name}")
         print(f"  Prescribed Dose: {plan.prescribed_dose_gy:.1f} Gy")

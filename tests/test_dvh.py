@@ -91,3 +91,35 @@ def test_cli_execution(tmp_path):
     assert main(["report", "-i", str(csv_file)]) == 0
     assert main(["plot", "-i", str(csv_file), "-o", out_svg]) == 0
     assert (tmp_path / "out.svg").exists()
+
+
+def test_cli_missing_file_error(tmp_path):
+    """Test that CLI returns error code for missing input file."""
+    nonexistent = str(tmp_path / "nonexistent.csv")
+    assert main(["report", "-i", nonexistent]) == 1
+    assert main(["plot", "-i", nonexistent, "-o", str(tmp_path / "out.svg")]) == 1
+
+
+def test_cli_sample_csv_to_file(tmp_path):
+    """Test sample-csv command writes to file."""
+    output_file = tmp_path / "sample_output.csv"
+    assert main(["sample-csv", "-o", str(output_file)]) == 0
+    assert output_file.exists()
+    content = output_file.read_text(encoding="utf-8")
+    assert "Dose_Gy" in content
+    assert "PTV_60Gy" in content
+
+
+def test_cli_invalid_rx_value(tmp_path):
+    """Test that negative rx value is rejected by argparse."""
+    csv_file = tmp_path / "dvh_test.csv"
+    csv_file.write_text(
+        "Dose_Gy,PTV\n"
+        "0.0,100\n"
+        "20.0,100\n",
+        encoding="utf-8",
+    )
+    # Negative rx should cause argparse to raise SystemExit
+    with pytest.raises(SystemExit) as exc_info:
+        main(["report", "-i", str(csv_file), "--rx", "-10.0"])
+    assert exc_info.value.code == 2

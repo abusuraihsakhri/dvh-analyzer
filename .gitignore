@@ -8,3 +8,13 @@ dist/
 build/
 .DS_Store
 Thumbs.db
+*.svg
+*.csv
+!sample_thoracic_dvh.csv
+!benchmark_dataset.json
+.venv/
+venv/
+.env
+*.log
+.coverage
+htmlcov/

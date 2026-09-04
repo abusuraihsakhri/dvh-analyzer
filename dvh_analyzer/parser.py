@@ -6,7 +6,7 @@ Supports Eclipse, RayStation, Monaco, and standard CSV/TSV table formats.
 import csv
 import io
 import re
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, Union
 from .models import DVHCurve, PlanAssessment
 
 

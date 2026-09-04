@@ -1,9 +1,7 @@
 """
 Live WebSocket Distributed Component Telemetry Streamer for dvh-analyzer.
 """
-import json
-import asyncio
-from typing import List, Dict, Any
+from typing import List, Any
 
 class TelemetryBroadcaster:
     """Broadcasts distributed component reasoning steps in real-time to active WebSocket clients."""

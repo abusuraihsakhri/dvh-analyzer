@@ -3,7 +3,6 @@ Distributed Component High-Throughput Traffic & Stress Testing Simulator for Dvh
 """
 import time
 import random
-import sys
 from agents.models import SystemTaskPayload
 from agents.supervisor import SystemSupervisor
 from agents.base import PHIGuard, SecurityException, AuditLogger
