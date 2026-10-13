@@ -85,9 +85,13 @@
 
   function render() {
     if (!plan) return;
-    const rx = Number(byId("rx").value);
-    if (!Number.isFinite(rx) || rx <= 0) {
-      setStatus("Prescription must be a positive finite dose in Gy.", true);
+    const rxInput = byId("rx").value;
+    const rx = Number(rxInput);
+    if (!rxInput.trim() || !Number.isFinite(rx) || rx <= 0 || rx > 1000) {
+      currentSvg = null;
+      byId("chart").replaceChildren();
+      byId("exports").hidden = true;
+      setStatus("Prescription must be a finite dose greater than 0 and at most 1000 Gy.", true);
       return;
     }
     byId("rxBadge").textContent = "Rx " + value(rx, 1) + " Gy";
@@ -146,7 +150,7 @@
 
   function csvCell(v) {
     let s = String(v);
-    if (/^[=+\-@]/.test(s)) s = "'" + s;
+    if (/^\s*[=+\-@]/.test(s)) s = "'" + s;
     return '"' + s.replace(/"/g, '""') + '"';
   }
 
