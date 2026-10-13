@@ -15,7 +15,7 @@ Cumulative dose–volume histogram (DVH) analysis for radiotherapy research and 
 
 ## Browser app
 
-When GitHub Pages is enabled and the deployment succeeds, the site is served from the repository's Pages deployment. To run the same interface locally:
+The live application above is deployed through GitHub Pages. To run the same interface locally:
 
 ```bash
 cp sample_thoracic_dvh.csv web/sample_thoracic_dvh.csv
