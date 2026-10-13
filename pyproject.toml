@@ -28,3 +28,7 @@ dvh-analyzer = "dvh_analyzer.cli:main"
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/dvh-analyzer"
 Repository = "https://github.com/abusuraihsakhri/dvh-analyzer.git"
+
+[tool.setuptools.packages.find]
+include = ["dvh_analyzer*", "agents*"]
+exclude = ["tests*", "web*"]
