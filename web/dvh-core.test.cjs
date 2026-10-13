@@ -28,3 +28,13 @@ test("rejects invalid and non-monotonic DVHs", () => {
     "Dose_Gy,Lung\n10,100\n20,0\n",
   ]) assert.throws(() => DVH.parse(source));
 });
+
+test("parses the actual distributed thoracic DVH sample", () => {
+  const fs = require("node:fs");
+  const path = require("node:path");
+  const sample = fs.readFileSync(path.join(__dirname, "..", "sample_thoracic_dvh.csv"), "utf8");
+  const p = DVH.parse(sample);
+  assert.ok(p.doses.length > 50);
+  assert.equal(p.curves.length, 5);
+  assert.ok(DVH.metrics(p, p.curves[0], 60).mean > 0);
+});
