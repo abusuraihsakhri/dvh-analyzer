@@ -18,7 +18,7 @@ def get_volume_at_dose(curve: DVHCurve, target_dose_gy: float) -> float:
 
     if target_dose_gy <= doses[0]:
         return vols[0]
-    if target_dose_gy >= doses[-1]:
+    if target_dose_gy > doses[-1]:
         return 0.0
 
     for i in range(len(doses) - 1):
@@ -82,7 +82,7 @@ def compute_d_mean(curve: DVHCurve) -> float:
 
 def compute_d_max(curve: DVHCurve) -> float:
     """
-    Returns maximum dose (D0.03cc or D_max Gy).
+    Returns D0.1% as a *surrogate* for maximum dose, not D0.03cc.
     """
     return get_dose_at_volume(curve, target_vol_pct=0.1)
 

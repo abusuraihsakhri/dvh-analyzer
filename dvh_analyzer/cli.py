@@ -176,11 +176,11 @@ def _execute_command(args, parser):
                 d_mean = compute_d_mean(t)
                 d_max = compute_d_max(t)
                 v95 = get_volume_at_dose(t, plan.prescribed_dose_gy * 0.95)
-                print(f"  • {t.structure_name:18} | Dmean: {d_mean:.1f} Gy | Dmax: {d_max:.1f} Gy | V95%: {v95:.1f}% | HI (ICRU 83): {hi:.3f}")
+                print(f"  • {t.structure_name:18} | Dmean: {d_mean:.1f} Gy | D0.1%: {d_max:.1f} Gy | V95%: {v95:.1f}% | HI (ICRU 83): {hi:.3f}")
 
         # QUANTEC Evaluations
         evals = evaluate_plan_constraints(plan)
-        print("\n[ORGAN-AT-RISK (OAR) QUANTEC COMPLIANCE]")
+        print("\n[ORGAN-AT-RISK (OAR) CONSTRAINT SCREENING — NOT CLINICAL APPROVAL]")
         print(f"{'Structure':<16} | {'Metric':<8} | {'Plan Val':<10} | {'Constraint':<12} | {'Status':<8} | {'Clinical Endpoint'}")
         print("-" * 80)
 
