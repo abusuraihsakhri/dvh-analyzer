@@ -1,5 +1,7 @@
 # DVH Analyzer
 
+### [Open the Live Application →](https://abusuraihsakhri.github.io/dvh-analyzer/)
+
 Cumulative dose–volume histogram (DVH) analysis for radiotherapy research and education. The repository contains a dependency-free Python calculation library and CLI, a separate FastAPI demonstration service, and a static browser viewer.
 
 **Important:** This software is not a validated treatment-planning system or medical device. It does not provide clinical approval of dose constraints. Independently verify results and protocol applicability before clinical use.
