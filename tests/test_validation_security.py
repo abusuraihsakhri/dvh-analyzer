@@ -30,10 +30,10 @@ def test_cgy_input_and_endpoint_interpolation():
     "Dose_Gy,Lung,Lung\n0,100,100\n10,0,0\n",
     "Dose_Gy,Lung\n10,100\n20,0\n",
     "Dose_Gy,Lung\n0,100\n",
-]):
-    def test_reject_invalid_dvh(input_text):
-        with pytest.raises(ValueError):
-            parse_dvh_csv(io.StringIO(input_text))
+])
+def test_reject_invalid_dvh(input_text):
+    with pytest.raises(ValueError):
+        parse_dvh_csv(io.StringIO(input_text))
 
 
 def test_custom_empty_constraints_do_not_fall_back():
