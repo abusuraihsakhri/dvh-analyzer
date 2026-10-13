@@ -7,17 +7,20 @@ name = "dvh-analyzer"
 version = "1.0.0"
 description = "Radiation Oncology Dose-Volume Histogram (DVH) Analyzer & QUANTEC Constraint Compliance Engine — pure SVG."
 readme = "README.md"
-authors = [{ name = "Dr. Abu Suraih Sakhri", email = "abusuraih@example.com" }]
+authors = [{ name = "Dr. Abu Suraih Sakhri" }]
 license = { text = "MIT" }
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
-    "Topic :: Scientific/Engineering :: Medical Science Apps.",
     "Topic :: Scientific/Engineering :: Visualization",
 ]
 requires-python = ">=3.9"
 dependencies = []
+
+[project.optional-dependencies]
+api = ["fastapi>=0.115,<1", "uvicorn>=0.30,<1", "pydantic>=2,<3"]
+dev = ["pytest>=8,<10", "fastapi>=0.115,<1", "uvicorn>=0.30,<1", "pydantic>=2,<3"]
 
 [project.scripts]
 dvh-analyzer = "dvh_analyzer.cli:main"
@@ -25,3 +28,7 @@ dvh-analyzer = "dvh_analyzer.cli:main"
 [project.urls]
 Homepage = "https://github.com/abusuraihsakhri/dvh-analyzer"
 Repository = "https://github.com/abusuraihsakhri/dvh-analyzer.git"
+
+[tool.setuptools.packages.find]
+include = ["dvh_analyzer*", "agents*"]
+exclude = ["tests*", "web*"]

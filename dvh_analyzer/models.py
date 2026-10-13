@@ -43,7 +43,7 @@ class ClinicalConstraint:
             return ConstraintResult.PASS if computed_val >= self.limit_value else ConstraintResult.FAIL
         elif self.operator == ">":
             return ConstraintResult.PASS if computed_val > self.limit_value else ConstraintResult.FAIL
-        return ConstraintResult.PASS
+        raise ValueError(f"Unsupported constraint operator: {self.operator}")
 
 
 # Standard QUANTEC / RTOG Clinical Organ-at-Risk (OAR) Dose Constraints Catalog

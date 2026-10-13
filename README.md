@@ -1,193 +1,84 @@
 # DVH Analyzer
 
-> **Domain:** Clinical Decision Support & Biomedical Computing  
-> **Standards:** QUANTEC, RTOG, ICRU 83, CAP / CLSI / ISO
+Cumulative dose–volume histogram (DVH) analysis for radiotherapy research and education. The repository contains a dependency-free Python calculation library and CLI, a separate FastAPI demonstration service, and a static browser viewer.
 
-<div align="center">
+**Important:** This software is not a validated treatment-planning system or medical device. It does not provide clinical approval of dose constraints. Independently verify results and protocol applicability before clinical use.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-3776AB.svg?logo=python&logoColor=white)
-![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688.svg?logo=fastapi&logoColor=white)
-![Tests](https://img.shields.io/badge/Tests-10%20passing-brightgreen.svg)
+## Features
 
-</div>
+- **Browser viewer:** Upload a tabular cumulative DVH CSV/TSV, inspect dose–volume curves and dose metrics, and export SVG and metrics CSV locally. No account, API key, backend, or network upload is required to analyze an uploaded file.
+- **Python library / CLI:** Parse tabular DVH data, interpolate VxGy and Dx%, calculate approximate Dmean, D0.1% (surrogate), ICRU 83 homogeneity index, and gEUD, and export SVG plots.
+- **Illustrative constraint screening:** Python CLI includes a fixed set of QUANTEC/RTOG-inspired example thresholds, *not* a validated or exhaustive clinical protocol library.
+- **Separate demonstration API:** Generic rule-based supervisor, PHI-pattern filter and HMAC-chained in-memory event log. These utilities do not replace clinical validation or comprehensive PHI de-identification.
 
----
+## Browser app
 
-## 📖 What It Does
-
-**DVH Analyzer** is a radiation oncology Dose-Volume Histogram (DVH) analysis platform that evaluates treatment plans against QUANTEC/RTOG clinical constraints. It provides:
-
-- **DVH Parsing:** Import tabular DVH data from CSV exports (Eclipse, RayStation, Monaco)
-- **Dosimetric Metrics:** VxGy, Dy%, Dmean, Dmax, Homogeneity Index (ICRU 83), gEUD
-- **QUANTEC Compliance:** Automated evaluation against standard organ-at-Risk constraints
-- **SVG Visualization:** Publication-ready DVH plots with zero external dependencies
-- **REST API:** FastAPI server with Prometheus telemetry endpoints
-- **Audit Trail:** HMAC-SHA256 tamper-evident logging for all evaluations
-- **PHI Guard:** Regex-based detection and blocking of outbound patient identifiers
-
----
-
-## 🚀 Installation
+When GitHub Pages is enabled and the deployment succeeds, the site is served from the repository's Pages deployment. To run the same interface locally:
 
 ```bash
-# Clone the repository
-git clone https://github.com/abusuraihsakhri/dvh-analyzer.git
-cd dvh-analyzer
-
-# Install dependencies
-pip install -e ".[dev]"
+cp sample_thoracic_dvh.csv web/sample_thoracic_dvh.csv
+python -m http.server 8000 --directory web
 ```
 
-**Optional dependencies:**
-```bash
-# For REST API server
-pip install fastapi uvicorn
-```
+Open http://localhost:8000. Use **Load sample data** or choose your own file, edit prescription dose if necessary, inspect the plot and metrics, then use the export buttons. The browser does **not** run the Python modules: the small metric routines are implemented in local JavaScript for fast, dependency-free use. The sample button loads a bundled local file from the same site; all analysis of uploaded DVH files stays on the device.
 
----
+## Input format
 
-## 💻 CLI Usage
-
-### 1. Generate Sample Data
-```bash
-python -m dvh_analyzer.cli sample-csv --output sample.csv
-```
-
-### 2. Generate DVH Report (Metrics + QUANTEC Compliance)
-```bash
-python -m dvh_analyzer.cli report --input sample.csv --rx 60.0
-```
-
-### 3. Render DVH Plot (SVG)
-```bash
-python -m dvh_analyzer.cli plot --input sample.csv --output dvh_plot.svg --rx 60.0
-```
-
-### CLI Parameters
-
-| Parameter | Command | Description |
-|:----------|:--------|:------------|
-| `-i, --input` | report, plot | Path to DVH CSV file |
-| `-o, --output` | plot, sample-csv | Output file path |
-| `--rx` | report, plot | Prescribed dose in Gy (default: 60.0) |
-| `-t, --title` | plot | SVG plot title |
-
-### Input CSV Format
-
-The DVH CSV file should have a header row starting with `Dose_Gy` (or `Dose_cGy`), followed by structure names:
+Only **tabular cumulative** DVH CSV/TSV is supported; proprietary vendor export files may need conversion first. The first column must be `Dose_Gy` or `Dose_cGy`, followed by structure columns containing relative cumulative volume percentages (0–100). Doses must start at 0 Gy and increase strictly; cumulative volumes must not increase as dose increases. Invalid values or rows are rejected rather than silently corrected.
 
 ```csv
-Dose_Gy,PTV_60Gy,Spinal_Cord,Total_Lungs,Heart,Esophagus
-0.0,100.00,100.00,100.00,100.00,100.00
-10.0,100.00,60.00,52.00,25.00,60.00
-20.0,100.00,30.00,22.00,12.50,40.00
-...
+Dose_Gy,PTV_60Gy,Spinal_Cord,Lungs
+0,100,100,100
+10,100,60,50
+20,100,20,25
+40,100,0,0
+60,0,0,0
 ```
 
----
+All structures are treated as relative-volume curves. Absolute-volume metrics such as D0.03cc cannot be calculated without structure volumes. `compute_d_max()` reports D0.1% as a **surrogate**, not a physical maximum. Mean dose relies on the sampled cumulative curve (including its dose-range coverage). The clinical constraints catalog is illustrative and needs protocol- and fractionation-specific review.
 
-## 🌐 REST API Server
+## Python installation and CLI
 
-### Start the Server
+Requires Python 3.9 or newer:
+
 ```bash
-# Using CLI
+python -m pip install -e ".[dev]"
+python -m pytest -v
+python -m dvh_analyzer.cli sample-csv --output sample.csv
+python -m dvh_analyzer.cli report --input sample.csv --rx 60
+python -m dvh_analyzer.cli plot --input sample.csv --output dvh_plot.svg --rx 60
+```
+
+The installed `dvh-analyzer` command exposes the same DVH subcommands. For just the core library, use `python -m pip install -e .` (no runtime third-party dependencies). `.[api]` installs optional FastAPI dependencies.
+
+## Demonstration REST API
+
+```bash
+python -m pip install -e ".[api]"
 python cli.py serve --host 127.0.0.1 --port 8000
-
-# Or with uvicorn directly
-uvicorn agents.api:app --host 127.0.0.1 --port 8000
 ```
 
-### Endpoints
+Routes: `GET /health`, `GET /metrics` (JSON), `POST /api/audit`, `POST /api/chat`, `GET /api/audit/logs`. The mock chat responder is not a clinical LLM. API audit logs are in-memory and are not durable across restarts. No authentication is included in the demonstration server: do not expose it to untrusted networks or submit patient identifiers.
 
-| Method | Path | Description |
-|:-------|:-----|:------------|
-| GET | `/health` | Health check |
-| GET | `/metrics` | Prometheus-style metrics |
-| POST | `/api/audit` | Submit task for evaluation |
-| POST | `/api/chat` | Query supervisor chat |
-| GET | `/api/audit/logs` | Retrieve audit trail |
-
-### Security Configuration
-
-Set the `AUDIT_SECRET_KEY` environment variable before running in production:
+To use Docker Compose, set a long random `AUDIT_SECRET_KEY` in the environment or an untracked local `.env` first:
 
 ```bash
-# Linux/macOS
-export AUDIT_SECRET_KEY=$(openssl rand -hex 32)
-
-# Windows PowerShell
-$env:AUDIT_SECRET_KEY = -join ((48..57)+(65..90)+(97..122) | Get-Random -Count 64 | % {[char]$_})
-```
-
----
-
-## 🐳 Docker Deployment
-
-```bash
-# Build and run
+export AUDIT_SECRET_KEY="$(openssl rand -hex 32)"
 docker compose up --build
-
-# Or manually
-docker build -t dvh-analyzer .
-docker run -p 8000:8000 -e AUDIT_SECRET_KEY=your-secret-key dvh-analyzer
 ```
 
----
+The key must remain private. Without a configured key, non-Compose invocations generate a random in-memory signing key that cannot verify log history after a restart. Regex screening is not sufficient to claim HIPAA compliance or zero-PHI safety.
 
-## 🧪 Testing
+## Tests and technology
 
-```bash
-# Run all tests
-pytest -v
+Run `python -m pytest -v` for Python tests, and `node --test web/dvh-core.test.cjs` for browser computation tests (Node 22 recommended). GitHub Actions tests Python 3.10, 3.11 and 3.12 and checks browser scripts. The browser viewer uses HTML, CSS, SVG and plain JavaScript with no framework or external runtime dependency; modern versions of Chromium, Firefox and Safari are expected to work. It does not require Pyodide.
 
-# Run specific test files
-pytest tests/test_dvh.py -v        # DVH core functionality
-pytest tests/test_dvh_analyzer.py -v  # Agent system
-pytest tests/test_enrichment.py -v    # Enrichment modules
-```
+## Privacy and limitations
 
-**Current test results:** 10/10 tests passing
+Uploading a file to the **browser viewer** uses only the local File API; nothing is intentionally transmitted to a server, and data is not persisted to browser storage. Exports are downloaded to the user's machine. The separately run API is a different network-connected component. Avoid entering patient-identifying information into the demonstration API or sharing exported data containing identifiers.
 
----
+The `enrichment.py` classes are threshold-based example scaffolding, not implemented DICOM-RT ingestion, TCP/NTCP modeling, VMAT complexity analysis, or adaptive replanning. The fixed example constraints are not substitutes for institutional standards. The browser and CLI must not be used to make unreviewed treatment decisions.
 
-## 📁 Project Structure
+## License
 
-```
-dvh-analyzer/
-├── dvh_analyzer/          # Core DVH analysis library
-│   ├── models.py          # Data models & QUANTEC constraints
-│   ├── parser.py          # CSV/DVH file parser
-│   ├── metrics.py         # Dosimetric calculations
-│   ├── evaluator.py       # QUANTEC compliance engine
-│   ├── renderer_svg.py    # SVG visualization
-│   └── cli.py             # Command-line interface
-├── agents/                # Enterprise agent system
-│   ├── api.py             # FastAPI server
-│   ├── base.py            # Security, PHI guard, audit trail
-│   ├── supervisor.py      # Orchestrator
-│   ├── workers.py         # Evaluation workers
-│   ├── models.py          # Pydantic schemas
-│   └── metrics.py         # Prometheus metrics
-├── tests/                 # Test suite
-├── web/                   # Web operations console
-├── cli.py                 # Agent system CLI
-├── enrichment.py          # Enrichment modules
-├── simulator.py           # Load testing simulator
-└── Dockerfile             # Container configuration
-```
-
----
-
-## 🛡️ Security Features
-
-- **PHI Outbound Guard:** Regex-based detection of SSNs, MRNs, phone numbers, emails, DOBs
-- **HMAC-SHA256 Audit Trail:** Chained, cryptographically signed audit logs
-- **Input Validation:** File path validation, positive dose constraints
-- **Zero External Dependencies:** Pure Python implementation for core calculations
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
+MIT — see [LICENSE](LICENSE).
