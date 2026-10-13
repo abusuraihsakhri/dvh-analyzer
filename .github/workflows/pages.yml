@@ -26,3 +26,19 @@ jobs:
           path: web
       - id: deployment
         uses: actions/deploy-pages@v4
+      - name: Check published Pages assets
+        env:
+          PAGES_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          set -euo pipefail
+          base="${PAGES_URL%/}"
+          for attempt in $(seq 1 12); do
+            if curl --fail --silent --show-error "$base/index.html" -o /tmp/dvh-home; then
+              break
+            fi
+            sleep 5
+          done
+          grep -q 'DVH Analyzer' /tmp/dvh-home
+          for asset in style.css dvh-core.js app.js sample_thoracic_dvh.csv; do
+            curl --fail --silent --show-error "$base/$asset" -o /dev/null
+          done
