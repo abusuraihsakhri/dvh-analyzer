@@ -29,6 +29,12 @@ jobs:
     - name: Compile Python sources
       run: python -m compileall -q dvh_analyzer agents cli.py enrichment.py simulator.py
 
+    - name: Check browser JavaScript
+      run: |
+        node --check web/dvh-core.js
+        node --check web/app.js
+        node --test web/dvh-core.test.cjs
+
     - name: Run Pytest Suite
       run: |
         pytest -v
